@@ -1,12 +1,21 @@
 package br.com.jproberto.desafioGrupoZap.core.model;
 
 public class PricingInfos {
+	private String period;
 	private double yearlyIptu;
 	private double price;
 	private double rentalTotalPrice;
 	private String businessType;
 	private double monthlyCondoFee;
 
+	public String getPeriod() {
+		return period;
+	}
+
+	public void setPeriod(String period) {
+		this.period = period;
+	}
+	
 	public double getYearlyIptu() {
 		return yearlyIptu;
 	}

@@ -11,7 +11,7 @@ public class Pageable<T> {
 	private int pageSize = DEFAULT_PAGE_SIZE;
 	private int currentPage;
 	private int startingIndex = 0;
-	private int endingIndex = pageSize == 0 ? 0 : pageSize - 1;
+	private int endingIndex = pageSize;
 	private int maxPages;
 	
 	public Pageable(List<T> list) {

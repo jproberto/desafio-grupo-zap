@@ -21,8 +21,8 @@ public class ZapController {
 	private ZapService service;
 	
 	@GetMapping
-	public ResponseEntity<List<Imovel>> getImovel(@RequestParam(value = "page", required = false) String page) {
-		int pageInt;
+	public ResponseEntity<List<Imovel>> getImovel(@RequestParam(value = "page", required = false) String page, @RequestParam(value = "pageSize", required = false) String pageSize) {
+		int pageInt, pageSizeInt;
 
 		if (page == null || page.equals("")) {
 			pageInt = 1;
@@ -33,7 +33,13 @@ public class ZapController {
 			throw new IllegalArgumentException();
 		}
 		
-		List<Imovel> imoveis = service.getImoveis(pageInt);
+		List<Imovel> imoveis;
+		if (pageSize != null && !pageSize.equals("") && Validator.isNumber(pageSize)) {
+			pageSizeInt = Integer.parseInt(pageSize);
+			imoveis = service.getImoveis(pageInt, pageSizeInt);
+		} else {
+			imoveis  = service.getImoveis(pageInt);
+		}
 		
 		//TODO o retorno não é uma lista de imoveis, tem que montar o início com as informações de paginação
 		return ResponseEntity.ok(imoveis);
