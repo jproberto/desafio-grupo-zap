@@ -18,8 +18,8 @@ public class PropertiesKeys {
 	public static final String ZAP_MINIMUM_SQUARE_METER_VALUE = "zap.minimum.square.meter.value";
 	public static final String ZAP_BOUDING_BOX_RULE_PERCENT = "zap.bouding.box.rule.percent";
 	
-	public static final String VIVA_REAL_MAXIMUM_RENT_VALUE = "viva.real.minimum.rent.value";
-	public static final String VIVA_REAL_MAXIMUM_SALE_VALUE = "viva.real.minimum.sale.value";
-	public static final String VIVA_REAL_MAXIMUM_CONDO_FEE_VALUE  = "viva.real.maximum.condo.fee.percent=30";
-	public static final String VIVA_REAL_BOUDING_BOX_RULE_PERCENT = "viva.real.bouding.box.rule.percent=50";
+	public static final String VIVAREAL_MAXIMUM_RENT_VALUE = "vivareal.maximum.rent.value";
+	public static final String VIVAREAL_MAXIMUM_SALE_VALUE = "vivareal.maximum.sale.value";
+	public static final String VIVAREAL_MAXIMUM_CONDO_FEE_PERCENT  = "vivareal.maximum.condo.fee.percent";
+	public static final String VIVAREAL_BOUDING_BOX_RULE_PERCENT = "vivareal.bouding.box.rule.percent";
 }

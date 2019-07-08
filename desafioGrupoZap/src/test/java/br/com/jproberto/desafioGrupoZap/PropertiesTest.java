@@ -13,7 +13,7 @@ public class PropertiesTest extends TestCase {
 	
 	public void testGetProperty() {
 		//Essa só vale para enquanto estiver em DEV
-		final String value = "http://grupozap-code-challenge.s3-website-us-east-1.amazonaws.com/sources/source-sample.json";
-		assertTrue(value.equals(PropertiesHandler.getString(PropertiesKeys.API_SOURCE_IMOVEIS)));
+		final String value = "10";
+		assertTrue(value.equals(PropertiesHandler.getString(PropertiesKeys.DEFAULT_PAGE_SIZE)));
 	}
 }

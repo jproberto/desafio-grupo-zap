@@ -8,15 +8,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.jproberto.desafioGrupoZap.consumer.cache.ImovelCache;
 import br.com.jproberto.desafioGrupoZap.core.service.ImovelService;
-import br.com.jproberto.desafioGrupoZap.core.service.ZapService;
+import br.com.jproberto.desafioGrupoZap.core.service.VivarealService;
 
 @RestController
-@RequestMapping("/zap")
-public class ZapController extends ImovelController {
+@RequestMapping("/vivareal")
+public class VivarealController extends ImovelController {
 
 	@Autowired
-	private ZapService service;
-
+	private VivarealService service;
+	
 	@Override
 	protected ImovelService getService() {
 		return service;
@@ -24,11 +24,11 @@ public class ZapController extends ImovelController {
 
 	@Override
 	protected int getTotalCount() {
-		return ImovelCache.getTotalZapCount();
+		return ImovelCache.getTotalVivarealCount();
 	}
 
 	@Override
 	protected Logger getLogger() {
-		return LoggerFactory.getLogger(ZapController.class);
+		return LoggerFactory.getLogger(VivarealController.class);
 	}
 }

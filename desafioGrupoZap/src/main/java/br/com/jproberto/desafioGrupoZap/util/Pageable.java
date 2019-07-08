@@ -2,6 +2,9 @@ package br.com.jproberto.desafioGrupoZap.util;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Pageable<T> {
 
 	public static final int DEFAULT_PAGE_SIZE = PropertiesHandler.getInteger(PropertiesKeys.DEFAULT_PAGE_SIZE);
@@ -14,7 +17,11 @@ public class Pageable<T> {
 	private int endingIndex = pageSize;
 	private int maxPages;
 	
+	private Logger logger = LoggerFactory.getLogger(Pageable.class);
+	
 	public Pageable(List<T> list) {
+		logger.info("Criando paginação para lista.");
+		
 		this.list = list;
 		this.currentPage = 1;
 		this.maxPages = 1;
@@ -23,6 +30,8 @@ public class Pageable<T> {
 	}
 	
 	private void calculatePages() {
+		logger.info("Calculando total de páginas...");
+		
 		if (pageSize > 0) {
 			int listSize = list.size();
 			maxPages = listSize / pageSize;
@@ -31,6 +40,8 @@ public class Pageable<T> {
 				maxPages++;
 			}
 		}
+		
+		logger.info("Total de páginas calculadas: " + maxPages);
 	}
 	
 	public List<T> getList() {
@@ -54,6 +65,8 @@ public class Pageable<T> {
 	}
 	
 	public void setCurrentPage(int page) {
+		logger.info("Definindo página atual para " + page);
+		
 		if (page >= maxPages) {
 			currentPage = maxPages;
 		} else if (page < 0) {

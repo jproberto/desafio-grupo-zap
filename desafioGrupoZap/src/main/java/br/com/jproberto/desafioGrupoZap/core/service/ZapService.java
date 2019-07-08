@@ -3,50 +3,29 @@ package br.com.jproberto.desafioGrupoZap.core.service;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import br.com.jproberto.desafioGrupoZap.consumer.cache.ImovelCache;
-import br.com.jproberto.desafioGrupoZap.consumer.service.ConsumerService;
 import br.com.jproberto.desafioGrupoZap.core.model.Imovel;
-import br.com.jproberto.desafioGrupoZap.util.Pageable;
 import br.com.jproberto.desafioGrupoZap.util.PropertiesHandler;
 import br.com.jproberto.desafioGrupoZap.util.PropertiesKeys;
 
 @Service
-public class ZapService {
+public class ZapService extends ImovelService {
+	private Logger logger = LoggerFactory.getLogger(ZapService.class);
 
-	@Autowired
-	private ConsumerService consumerService;
-	
-	private Pageable<Imovel> paginacao;
 
-	public List<Imovel> getImoveis(int currentPage) {
-		return getImoveis(currentPage, 0);
-	}
-	
-	public List<Imovel> getImoveis(int currentPage, int pageSize) {
-		if (paginacao == null) {
-			List<Imovel> imoveis = getFromCache();
-			paginacao = new Pageable<Imovel>(imoveis);
-		}
-		
-		paginacao.setCurrentPage(currentPage);
-		
-		if (pageSize > 0) {
-			paginacao.setPageSize(pageSize);
-		}
-		
-		return paginacao.getListForCurrentPage();
-	}
-
-	private List<Imovel> getFromCache() {
+	protected List<Imovel> getFromCache() {
 		List<Imovel> imoveis;
 		
 		// Se o cache estiver preenchido, usamos ele
 		if (ImovelCache.zapHasValues()) {
 			imoveis = ImovelCache.getImoveis();
 		} else {
+			logger.info("Filtrando imóveis para Zap...");
+			
 			// Se não estiver pegamos do source, aplicamos os filtros e atualizamos o cache
 			imoveis = new ArrayList<Imovel>();
 
@@ -54,16 +33,21 @@ public class ZapService {
 
 			double minimumRentDefaultValue = PropertiesHandler.getDouble(PropertiesKeys.ZAP_MINIMUM_RENT_VALUE);
 			double minimumSaleDefaultValue = PropertiesHandler.getDouble(PropertiesKeys.ZAP_MINIMUM_SALE_VALUE);
-			double minimumSquareMeterDefaultValue = PropertiesHandler
-					.getDouble(PropertiesKeys.ZAP_MINIMUM_SQUARE_METER_VALUE);
+			double minimumSquareMeterDefaultValue = PropertiesHandler.getDouble(PropertiesKeys.ZAP_MINIMUM_SQUARE_METER_VALUE);
 
-			double boudingboxRulePercent = 1
-					- (PropertiesHandler.getDouble(PropertiesKeys.ZAP_BOUDING_BOX_RULE_PERCENT) / 100);
-
+			double boudingboxRulePercent = 1 - (PropertiesHandler.getDouble(PropertiesKeys.ZAP_BOUDING_BOX_RULE_PERCENT) / 100);
+			
+			logger.info("Valor mínimo de alguel padrão: " + minimumRentDefaultValue);
+			logger.info("Valor mínimo de venda padrão: " + minimumSaleDefaultValue);
+			logger.info("Valor mínimo de metro quadrado padrão: " + minimumSquareMeterDefaultValue);
+			logger.info("Percentual de modificação caso esteja dentro do bouding box dos arredores do GrupoZap: " + boudingboxRulePercent + "%");
+			
 			double minimumRentValue, minimumSaleValue, minimumSquareMeterValue;
 
 			for (Imovel imovel : imoveisSource) {
 				if (imovel.isInGrupoZapBoudingBox()) {
+					logger.info("Imóvel está dentro do bouding box dos arredores do GrupoZap. Percentual de alteração aplicado.");
+					
 					minimumRentValue = minimumRentDefaultValue * boudingboxRulePercent;
 					minimumSaleValue = minimumSaleDefaultValue * boudingboxRulePercent;
 					minimumSquareMeterValue = minimumSquareMeterDefaultValue * boudingboxRulePercent;
@@ -73,30 +57,56 @@ public class ZapService {
 					minimumSquareMeterValue = minimumSquareMeterDefaultValue;
 				}
 
-				// Se for aluguel, valor mínimo de 3.500
+				//Verifica o valor mínimo de aluguel
 				if (imovel.getPricingInfos().getBusinessType().contains("RENTAL")) {
+					logger.info("Imóvel para alugar.");
+					
 					if (imovel.getPricingInfos().getRentalTotalPrice() >= minimumRentValue) {
+						logger.info("Valor de aluguel acima do limite mínimo.");
+						logger.info("Imóvel adicionado à lista do Zap.");
+						
 						imoveis.add(imovel);
 						continue;
+					} else {
+						logger.info("Valor de aluguel abaixo do limite mínimo.");
+						logger.info("Imóvel não foi adicionado à lista do Zap.");
 					}
 				}
 
 				if (imovel.getPricingInfos().getBusinessType().contains("SALE")) {
-					// Se for venda, valor mínimo de 600.000
+					logger.info("Imóvel a venda.");
+					
+					//Verifica o valor mínimo de venda
 					if (imovel.getPricingInfos().getPrice() >= minimumSaleValue) {
-						// valor do metro quadrado deve ser maior que 3.500
+						logger.info("Valor de venda acima do limite mínimo.");
+						
+						//Verifica o valor mínimo do metro quadrado, apenas para imóveis com valor de área útil válido
 						if (imovel.getUsableAreas() > 0) {
+							logger.info("Área útil válida.");
+							
 							double squareMeterValue = imovel.getPricingInfos().getPrice() / imovel.getUsableAreas();
 
 							if (squareMeterValue > minimumSquareMeterValue) {
+								logger.info("Valor de metro quadrado acima do limite mínimo.");
+								logger.info("Imóvel adicionado à lista do Zap.");
+								
 								imoveis.add(imovel);
 								continue;
+							} else {
+								logger.info("Valor de metro quadrado abaixo do limite mínimo.");
+								logger.info("Imóvel não foi adicionado à lista do Zap.");
 							}
 						} else {
-							// Apenas para imóveis com área de uso maior que 0
+							//Se o valor da área útil não for válido essa regra é ignorada
+							logger.info("Área útil não é válida.");
+							logger.info("Imóvel adicionado à lista do Zap.");
+							
 							imoveis.add(imovel);
 							continue;
 						}
+					} else {
+						logger.info("Valor de venda abaixo do limite mínimo.");
+						logger.info("Imóvel não foi adicionado à lista do Zap.");
 					}
 				}
 			}
