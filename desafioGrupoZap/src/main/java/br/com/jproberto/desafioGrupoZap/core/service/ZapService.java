@@ -9,32 +9,37 @@ import org.springframework.stereotype.Service;
 
 import br.com.jproberto.desafioGrupoZap.consumer.cache.ImovelCache;
 import br.com.jproberto.desafioGrupoZap.core.model.Imovel;
+import br.com.jproberto.desafioGrupoZap.exception.JsonToImoveisException;
 import br.com.jproberto.desafioGrupoZap.util.PropertiesHandler;
 import br.com.jproberto.desafioGrupoZap.util.PropertiesKeys;
 
+/**
+ * Classe de serviço que recebe as chamadas feitas por {@link ZapController}. Implementa {@link ImovelService#getFromCache()} com as regras definidas para que um imóvel seja elegido para o Zap. 
+ */
 @Service
 public class ZapService extends ImovelService {
 	private Logger logger = LoggerFactory.getLogger(ZapService.class);
 
-
-	protected List<Imovel> getFromCache() {
+	protected List<Imovel> getFromCache() throws JsonToImoveisException {
 		List<Imovel> imoveis;
 		
-		// Se o cache estiver preenchido, usamos ele
+		// Se o cache estiver preenchido, usa-se ele
 		if (ImovelCache.zapHasValues()) {
 			imoveis = ImovelCache.getImoveis();
 		} else {
 			logger.info("Filtrando imóveis para Zap...");
 			
-			// Se não estiver pegamos do source, aplicamos os filtros e atualizamos o cache
+			// Se não estiver, busca os valores do source, aplica os filtros e atualiza o cache
 			imoveis = new ArrayList<Imovel>();
 
 			List<Imovel> imoveisSource = consumerService.getImoveis();
 
+			//Definindo os valores padrão para os campos a serem comparados
 			double minimumRentDefaultValue = PropertiesHandler.getDouble(PropertiesKeys.ZAP_MINIMUM_RENT_VALUE);
 			double minimumSaleDefaultValue = PropertiesHandler.getDouble(PropertiesKeys.ZAP_MINIMUM_SALE_VALUE);
 			double minimumSquareMeterDefaultValue = PropertiesHandler.getDouble(PropertiesKeys.ZAP_MINIMUM_SQUARE_METER_VALUE);
 
+			//Percentual aplicado caso o imóvel esteja dentro do bounding box dos arredores do Grupo Zap
 			double boudingboxRulePercent = 1 - (PropertiesHandler.getDouble(PropertiesKeys.ZAP_BOUDING_BOX_RULE_PERCENT) / 100);
 			
 			logger.info("Valor mínimo de alguel padrão: " + minimumRentDefaultValue);
@@ -45,6 +50,7 @@ public class ZapService extends ImovelService {
 			double minimumRentValue, minimumSaleValue, minimumSquareMeterValue;
 
 			for (Imovel imovel : imoveisSource) {
+				//Se o imóvel está dentro do bounding box dos arredores do Grupo Zap, aplica a porcentagem
 				if (imovel.isInGrupoZapBoudingBox()) {
 					logger.info("Imóvel está dentro do bouding box dos arredores do GrupoZap. Percentual de alteração aplicado.");
 					
@@ -57,7 +63,7 @@ public class ZapService extends ImovelService {
 					minimumSquareMeterValue = minimumSquareMeterDefaultValue;
 				}
 
-				//Verifica o valor mínimo de aluguel
+				//Se o imóvel estiver para alugar, verifica se o valor do aluguel está acima do limite mínimo permitido
 				if (imovel.getPricingInfos().getBusinessType().contains("RENTAL")) {
 					logger.info("Imóvel para alugar.");
 					
@@ -73,14 +79,14 @@ public class ZapService extends ImovelService {
 					}
 				}
 
+				//Se o imóvel estiver a venda, verifica se o valor da venda e o valor do metro quadrado estão acima do valor mínimo permitido
 				if (imovel.getPricingInfos().getBusinessType().contains("SALE")) {
 					logger.info("Imóvel a venda.");
 					
-					//Verifica o valor mínimo de venda
 					if (imovel.getPricingInfos().getPrice() >= minimumSaleValue) {
 						logger.info("Valor de venda acima do limite mínimo.");
 						
-						//Verifica o valor mínimo do metro quadrado, apenas para imóveis com valor de área útil válido
+						//Apenas para imóveis com valor de área útil válido
 						if (imovel.getUsableAreas() > 0) {
 							logger.info("Área útil válida.");
 							
@@ -111,6 +117,7 @@ public class ZapService extends ImovelService {
 				}
 			}
 
+			//Após aplicar as regras, atualiza o cache correspondente
 			ImovelCache.updateZapImoveis(imoveis);
 		}
 		

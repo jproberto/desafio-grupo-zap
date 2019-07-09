@@ -8,8 +8,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.jproberto.desafioGrupoZap.consumer.cache.ImovelCache;
 import br.com.jproberto.desafioGrupoZap.core.service.ImovelService;
+import br.com.jproberto.desafioGrupoZap.core.service.VivarealService;
 import br.com.jproberto.desafioGrupoZap.core.service.ZapService;
 
+/**
+ * Classe que recebe as requisições feitas para /zap. Herda o comportamento de {@link ImovelController} e define que seu serviço é {@link ZapService}
+ */
 @RestController
 @RequestMapping("/zap")
 public class ZapController extends ImovelController {

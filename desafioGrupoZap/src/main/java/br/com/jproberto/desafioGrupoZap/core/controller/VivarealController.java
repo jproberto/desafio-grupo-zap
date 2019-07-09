@@ -10,6 +10,9 @@ import br.com.jproberto.desafioGrupoZap.consumer.cache.ImovelCache;
 import br.com.jproberto.desafioGrupoZap.core.service.ImovelService;
 import br.com.jproberto.desafioGrupoZap.core.service.VivarealService;
 
+/**
+ * Classe que recebe as requisições feitas para /vivareal. Herda o comportamento de {@link ImovelController} e define que seu serviço é {@link VivarealService}
+ */
 @RestController
 @RequestMapping("/vivareal")
 public class VivarealController extends ImovelController {

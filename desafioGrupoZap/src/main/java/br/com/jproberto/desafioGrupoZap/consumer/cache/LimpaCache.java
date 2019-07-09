@@ -5,6 +5,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+/**
+ *	Tarefa agendada para fazer a limpeza do cache de tempos em tempos para que os dados não fiquem obsoletos 
+ */
 @Component
 public class LimpaCache {
 	

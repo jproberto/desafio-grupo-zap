@@ -9,32 +9,38 @@ import org.springframework.stereotype.Service;
 
 import br.com.jproberto.desafioGrupoZap.consumer.cache.ImovelCache;
 import br.com.jproberto.desafioGrupoZap.core.model.Imovel;
+import br.com.jproberto.desafioGrupoZap.exception.JsonToImoveisException;
 import br.com.jproberto.desafioGrupoZap.util.PropertiesHandler;
 import br.com.jproberto.desafioGrupoZap.util.PropertiesKeys;
 
+/**
+ * Classe de serviço que recebe as chamadas feitas por {@link VivarealController}. Implementa {@link ImovelService#getFromCache()} com as regras definidas para que um imóvel seja elegido para o Vivareal. 
+ */
 @Service
 public class VivarealService extends ImovelService {
 	private Logger logger = LoggerFactory.getLogger(VivarealService.class);
 
 	@Override
-	protected List<Imovel> getFromCache() {
+	protected List<Imovel> getFromCache() throws JsonToImoveisException {
 		List<Imovel> imoveis;
 
-		// Se o cache estiver preenchido, usamos ele
+		// Se o cache estiver preenchido, usa-se ele
 		if (ImovelCache.vivarealHasValues()) {
-			imoveis = ImovelCache.getImoveis();
+			imoveis = ImovelCache.getVivarealImoveis();
 		} else {
 			logger.info("Filtrando imóveis para Vivareal...");
 			
-			// Se não estiver pegamos do source, aplicamos os filtros e atualizamos o cache
+			// Se não estiver, busca os valores do source, aplica os filtros e atualiza o cache
 			imoveis = new ArrayList<Imovel>();
 
 			List<Imovel> imoveisSource = consumerService.getImoveis();
 			
+			//Definindo os valores padrão para os campos a serem comparados
 			double maximumRentDefaultValue = PropertiesHandler.getDouble(PropertiesKeys.VIVAREAL_MAXIMUM_RENT_VALUE);
 			double maximumSaleDefaultValue = PropertiesHandler.getDouble(PropertiesKeys.VIVAREAL_MAXIMUM_SALE_VALUE);
 			double maximumCondoFeeDefaultValue = PropertiesHandler.getDouble(PropertiesKeys.VIVAREAL_MAXIMUM_CONDO_FEE_PERCENT) / 100;
 			
+			//Percentual aplicado caso o imóvel esteja dentro do bounding box dos arredores do Grupo Zap
 			double boudingboxRulePercent = 1 + (PropertiesHandler.getDouble(PropertiesKeys.ZAP_BOUDING_BOX_RULE_PERCENT) / 100);
 			
 			logger.info("Valor máximo de aluguel padrão: " + maximumRentDefaultValue);
@@ -45,6 +51,7 @@ public class VivarealService extends ImovelService {
 			double maximumRentValue, maximumSaleValue, maximumCondoFeePercentValue;
 			
 			for (Imovel imovel : imoveisSource) {
+				//Se o imóvel está dentro do bounding box dos arredores do Grupo Zap, aplica a porcentagem
 				if (imovel.isInGrupoZapBoudingBox()) {
 					logger.info("Imóvel está dentro do bouding box dos arredores do GrupoZap. Percentual de alteração aplicado.");
 					
@@ -57,10 +64,10 @@ public class VivarealService extends ImovelService {
 					maximumCondoFeePercentValue = maximumCondoFeeDefaultValue;
 				}
 				
+				//Se o imóvel estiver a venda, verifica se o valor está abaixo do máximo permitido
 				if (imovel.getPricingInfos().getBusinessType().contains("SALE")) {
 					logger.info("Imóvel a venda.");
 					
-					//Verifica o valor máximo de venda
 					if (imovel.getPricingInfos().getPrice() <= maximumSaleValue) {
 						logger.info("Valor de venda abaixo do limite máximo.");
 						logger.info("Imóvel adicionado à lista do Vivareal.");
@@ -73,12 +80,12 @@ public class VivarealService extends ImovelService {
 					}
 				}
 				
+				//Se o imóvel está para alugar, verifica se o valor do aluguel está abaixo do limite máximo permitido e se o valor do condmínio respeita a porcentagem do aluguel definida.
 				if (imovel.getPricingInfos().getBusinessType().contains("RENTAL")) {
 					logger.info("Imóvel para alugar.");
 					
-					//Verfica o valor máximo de aluguel
 					if (imovel.getPricingInfos().getRentalTotalPrice() <= maximumRentValue) {
-						//Verifica o valor máximo do condomínio, apenas para imóveis com valor de condomínio válido
+						//Apenas para imóveis com valor de condomínio válido
 						logger.info("Valor de aluguel abaixo do limite máximo.");
 						
 						if (imovel.getPricingInfos().getMonthlyCondoFee() > 0) {
@@ -110,6 +117,7 @@ public class VivarealService extends ImovelService {
 				}
 			}
 			
+			//Após aplicar as regras, atualiza o cache correspondente
 			ImovelCache.updateVivarealImoveis(imoveis);
 		}
 		

@@ -18,9 +18,14 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import br.com.jproberto.desafioGrupoZap.consumer.cache.ImovelCache;
 import br.com.jproberto.desafioGrupoZap.core.model.Imovel;
+import br.com.jproberto.desafioGrupoZap.exception.JsonToImoveisException;
 import br.com.jproberto.desafioGrupoZap.util.PropertiesHandler;
 import br.com.jproberto.desafioGrupoZap.util.PropertiesKeys;
 
+/**
+ *	Serviço que cuida da chamada ao source externo e transformação da resposta em objetos com significado 
+ *
+ */
 @Service
 public class ConsumerService {
 	private final RestTemplate restTemplate = new RestTemplate();
@@ -44,9 +49,9 @@ public class ConsumerService {
 	 * Chamada feita a URL com o source para buscar os imoveis
 	 * 
 	 * @return representação envelopada dos imóveis
-	 * @throws Exception
+	 * @throws JsonToImoveisException 
 	 */
-	public List<Imovel> getImoveis() {
+	public List<Imovel> getImoveis() throws JsonToImoveisException {
 		//Se o cache tiver valor, trabalhamos com ele
 		if (ImovelCache.hasValues()) {
 			return ImovelCache.getImoveis();
@@ -65,11 +70,13 @@ public class ConsumerService {
 		logger.info("Objetos transformados.");
 		logger.info("Removendo imóveis com latitude e longitude inválidas...");
 		
+		//Imóveis com latitude e longitude são iguais a zero não são elegíveis para nenhum sistema e por isso são removidos do resultado
 		Predicate<Imovel> latitudeLongitudeZero = imovel -> imovel.getAddress().getGeoLocation().getLocation().getLat() == 0.0 && imovel.getAddress().getGeoLocation().getLocation().getLon() == 0.0;
 		imoveis.removeIf(latitudeLongitudeZero);
 		
 		logger.info("Imóveis removidos.");
 		
+		//Após a busca e tratamento, o cache de imóveis é atualizado
 		ImovelCache.updateImoveis(imoveis);
 		return imoveis;
 	}
@@ -82,18 +89,17 @@ public class ConsumerService {
 	 *            String que representa o JSON retornado pela consulta feita ao
 	 *            source
 	 * @return objeto envelopado do recurso
-	 * @throws Exception
+	 * @throws JsonToImoveisException 
 	 */
-	private List<Imovel> getFromJson(String json) {
+	private List<Imovel> getFromJson(String json) throws JsonToImoveisException {
 		ObjectMapper mapper = new ObjectMapper();
 		try {
 			TypeFactory typeFactory = mapper.getTypeFactory();
 			CollectionType collectionType = typeFactory.constructCollectionType(List.class, Imovel.class);
 			return mapper.readValue(json, collectionType);
 		} catch (Exception e) {
-			// TODO lançar exceção mais amigável
 			e.printStackTrace();
+			throw new JsonToImoveisException();
 		}
-		return null;
 	}
 }

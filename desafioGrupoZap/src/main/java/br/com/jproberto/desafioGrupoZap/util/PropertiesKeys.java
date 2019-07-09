@@ -1,5 +1,8 @@
 package br.com.jproberto.desafioGrupoZap.util;
 
+/**
+ * Classe que reúne todas as chaves acessíveis no arquivo de propriedades 
+ */
 public class PropertiesKeys {
 
 	public static final String PROPERTY_FILE = "./resources/application.properties";
