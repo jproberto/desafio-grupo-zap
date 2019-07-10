@@ -2,8 +2,6 @@
 
 Esse projeto foi desenvolvido por João Paulo de Souza como desafio para processo seletivo do Grupo Zap.
 
-=============
-
  - ##### Como rodar localmente?
  O projeto utiliza Spring Boot e sua classe principal é a **AppConfig**, que pode ser encontrada no seguinte caminho: 
  > /desafioGrupoZap/src/main/java/br/com/jproberto/desafioGrupoZap/
